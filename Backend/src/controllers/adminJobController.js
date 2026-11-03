@@ -13,13 +13,16 @@ async function createJob(req, res, next) {
       workMode,
       employmentType,
       salary,
+      experience,
       summary,
       description,
       responsibilities,
       qualifications,
       skills,
+      benefits,
+      applicationInstructions,
       status,
-      expiresAt
+      expiresAt,
     } = req.body;
 
     const job = await Job.create({
@@ -29,20 +32,23 @@ async function createJob(req, res, next) {
       workMode,
       employmentType,
       salary,
+      experience,
       summary,
       description,
       responsibilities,
       qualifications,
       skills,
+      benefits,
+      applicationInstructions,
       status: status || "draft",
       publishedAt: status === "published" ? new Date() : null,
-      expiresAt: expiresAt || null
+      expiresAt: expiresAt || null,
     });
 
     res.status(201).json({
       success: true,
       message: "Job created successfully.",
-      data: job
+      data: job,
     });
   } catch (error) {
     next(error);
@@ -59,7 +65,7 @@ async function getAllJobs(req, res, next) {
     res.json({
       success: true,
       count: jobs.length,
-      data: jobs
+      data: jobs,
     });
   } catch (error) {
     next(error);
@@ -72,15 +78,36 @@ async function updateJob(req, res, next) {
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid job ID."
+        message: "Invalid job ID.",
       });
     }
 
-    const updates = { ...req.body };
+    const allowedFields = [
+      "title",
+      "company",
+      "location",
+      "workMode",
+      "employmentType",
+      "salary",
+      "experience",
+      "summary",
+      "description",
+      "responsibilities",
+      "qualifications",
+      "skills",
+      "benefits",
+      "applicationInstructions",
+      "status",
+      "expiresAt",
+    ];
 
-    delete updates._id;
-    delete updates.createdAt;
-    delete updates.updatedAt;
+    const updates = {};
+
+    allowedFields.forEach((field) => {
+      if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+        updates[field] = req.body[field];
+      }
+    });
 
     if (updates.status === "published") {
       updates.publishedAt = new Date();
@@ -91,21 +118,21 @@ async function updateJob(req, res, next) {
       updates,
       {
         new: true,
-        runValidators: true
+        runValidators: true,
       }
     );
 
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: "Job not found."
+        message: "Job not found.",
       });
     }
 
     res.json({
       success: true,
       message: "Job updated successfully.",
-      data: job
+      data: job,
     });
   } catch (error) {
     next(error);
@@ -118,7 +145,7 @@ async function deleteJob(req, res, next) {
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid job ID."
+        message: "Invalid job ID.",
       });
     }
 
@@ -127,13 +154,13 @@ async function deleteJob(req, res, next) {
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: "Job not found."
+        message: "Job not found.",
       });
     }
 
     res.json({
       success: true,
-      message: "Job deleted successfully."
+      message: "Job deleted successfully.",
     });
   } catch (error) {
     next(error);
@@ -144,5 +171,5 @@ module.exports = {
   createJob,
   getAllJobs,
   updateJob,
-  deleteJob
+  deleteJob,
 };

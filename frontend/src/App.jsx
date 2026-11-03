@@ -7,6 +7,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import "./App.css";
 import AdminApplications from "./pages/AdminApplications";
 import TrackApplication from "./pages/TrackApplication";
+
 function formatDate(date) {
   if (!date) return "Recently posted";
 
@@ -23,8 +24,10 @@ function formatDate(date) {
   });
 }
 
+// APPLICATION FORM
 function ApplicationForm({ job, onClose }) {
   const [message, setMessage] = useState("");
+  const [applicationId, setApplicationId] = useState("");
   const [resumeError, setResumeError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -54,6 +57,7 @@ function ApplicationForm({ job, onClose }) {
 
     setResumeError("");
     setMessage("");
+    setApplicationId("");
     setLoading(true);
 
     try {
@@ -82,6 +86,10 @@ function ApplicationForm({ job, onClose }) {
 
       setMessage(
         response.data.message || "Application submitted successfully!"
+      );
+
+      setApplicationId(
+        response.data.data?.applicationId || ""
       );
 
       form.reset();
@@ -207,7 +215,18 @@ function ApplicationForm({ job, onClose }) {
           )}
 
           {message && (
-            <p className="form-notice">{message}</p>
+            <div className="form-notice">
+              <p>{message}</p>
+
+              {applicationId && (
+                <p>
+                  Your Application ID:{" "}
+                  <strong>{applicationId}</strong>
+                  <br />
+                  Please save this ID to track your application.
+                </p>
+              )}
+            </div>
           )}
 
           <button
@@ -223,6 +242,7 @@ function ApplicationForm({ job, onClose }) {
   );
 }
 
+// JOB DETAILS
 function JobDetails({ job, onClose, onApply }) {
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
@@ -253,9 +273,13 @@ function JobDetails({ job, onClose, onApply }) {
           <span>{job.employmentType}</span>
           <span>{job.workMode || "On-site"}</span>
           <span>{job.salary || "Not specified"}</span>
+          {job.experience && job.experience !== "Not specified" && (
+            <span>{job.experience}</span>
+          )}
         </div>
 
         <h3>About the role</h3>
+        {job.summary && <p>{job.summary}</p>}
         <p>{job.description}</p>
 
         {job.responsibilities?.length > 0 && (
@@ -293,6 +317,24 @@ function JobDetails({ job, onClose, onApply }) {
           </>
         )}
 
+        {job.benefits?.length > 0 && (
+          <>
+            <h3>Benefits</h3>
+            <ul>
+              {job.benefits.map((benefit, index) => (
+                <li key={index}>{benefit}</li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {job.applicationInstructions?.trim() && (
+          <>
+            <h3>Application Instructions</h3>
+            <p>{job.applicationInstructions}</p>
+          </>
+        )}
+
         <button
           className="button button-primary button-full modal-apply"
           onClick={onApply}
@@ -304,8 +346,10 @@ function JobDetails({ job, onClose, onApply }) {
   );
 }
 
+// HOMEPAGE
 function HomePage() {
   const navigate = useNavigate();
+
   const [jobs, setJobs] = useState([]);
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("");
@@ -344,19 +388,25 @@ function HomePage() {
     fetchJobs();
   }, []);
 
+  // SEARCH, FILTER AND SORT JOBS
   const filteredJobs = useMemo(() => {
     const searchTerm = search.trim().toLowerCase();
     const locationTerm = location.trim().toLowerCase();
 
     return jobs
       .filter((job) => {
+        const searchableText = [
+          job.title,
+          job.company,
+          job.summary,
+          ...(job.skills || []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
         const matchesSearch =
-          !searchTerm ||
-          `${job.title} ${job.company} ${job.summary} ${(
-            job.skills || []
-          ).join(" ")}`
-            .toLowerCase()
-            .includes(searchTerm);
+          !searchTerm || searchableText.includes(searchTerm);
 
         const matchesLocation =
           !locationTerm ||
@@ -370,7 +420,7 @@ function HomePage() {
       })
       .sort((a, b) => {
         if (sortOrder === "Company A–Z") {
-          return a.company.localeCompare(b.company);
+          return (a.company || "").localeCompare(b.company || "");
         }
 
         return (
@@ -544,6 +594,7 @@ function HomePage() {
             <div className="empty-state">
               <h3>Something went wrong</h3>
               <p>{error}</p>
+
               <button
                 className="button button-outline"
                 onClick={() => window.location.reload()}
@@ -581,7 +632,9 @@ function HomePage() {
                   <div className="job-card-bottom">
                     <div>
                       <strong>{job.salary || "Not specified"}</strong>
-                      <span>{formatDate(job.publishedAt || job.createdAt)}</span>
+                      <span>
+                        {formatDate(job.publishedAt || job.createdAt)}
+                      </span>
                     </div>
 
                     <button
@@ -657,30 +710,30 @@ function HomePage() {
   );
 }
 
+// MAIN APP ROUTES
 function App() {
   return (
-   <Routes>
-  <Route path="/" element={<HomePage />} />
-  <Route path="/admin/login" element={<AdminLogin />} />
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
 
-  <Route
-    path="/admin/dashboard"
-    element={<AdminDashboard />}
-  />
+      <Route
+        path="/admin/dashboard"
+        element={<AdminDashboard />}
+      />
 
-  <Route path="/admin/jobs" element={<AdminJobs />} />
+      <Route path="/admin/jobs" element={<AdminJobs />} />
 
-  <Route
-    path="/admin/applications"
-    element={<AdminApplications />}
-  />
+      <Route
+        path="/admin/applications"
+        element={<AdminApplications />}
+      />
 
-  <Route
-    path="/track-application"
-    element={<TrackApplication />}
-  />
-</Routes> 
-    
+      <Route
+        path="/track-application"
+        element={<TrackApplication />}
+      />
+    </Routes>
   );
 }
 

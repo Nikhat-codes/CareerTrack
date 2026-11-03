@@ -9,11 +9,14 @@ const emptyForm = {
   workMode: "On-site",
   employmentType: "Full-time",
   salary: "",
+  experience: "",
   summary: "",
   description: "",
   responsibilities: "",
   qualifications: "",
   skills: "",
+  benefits: "",
+  applicationInstructions: "",
   status: "draft",
   expiresAt: "",
 };
@@ -59,8 +62,10 @@ function AdminJobs() {
 
       setJobs(response.data.data || []);
     } catch (err) {
-      if (err.response?.status === 401 ||
-          err.response?.status === 403) {
+      if (
+        err.response?.status === 401 ||
+        err.response?.status === 403
+      ) {
         localStorage.removeItem("adminToken");
         navigate("/admin/login");
         return;
@@ -102,11 +107,14 @@ function AdminJobs() {
       workMode: job.workMode || "On-site",
       employmentType: job.employmentType || "Full-time",
       salary: job.salary || "",
+      experience: job.experience || "",
       summary: job.summary || "",
       description: job.description || "",
       responsibilities: (job.responsibilities || []).join("\n"),
       qualifications: (job.qualifications || []).join("\n"),
       skills: (job.skills || []).join(", "),
+      benefits: (job.benefits || []).join("\n"),
+      applicationInstructions: job.applicationInstructions || "",
       status: job.status || "draft",
       expiresAt: job.expiresAt
         ? new Date(job.expiresAt).toISOString().slice(0, 10)
@@ -137,6 +145,7 @@ function AdminJobs() {
       responsibilities: convertList(form.responsibilities),
       qualifications: convertList(form.qualifications),
       skills: convertList(form.skills, ","),
+      benefits: convertList(form.benefits),
       expiresAt: form.expiresAt || null,
     };
 
@@ -359,6 +368,18 @@ function AdminJobs() {
                   />
                 </label>
 
+                {/* NEW FIELD: EXPERIENCE */}
+
+                <label>
+                  Experience Required
+                  <input
+                    name="experience"
+                    value={form.experience}
+                    onChange={handleChange}
+                    placeholder="e.g. Fresher / 0-2 years"
+                  />
+                </label>
+
                 <label>
                   Job Status
                   <select
@@ -436,6 +457,32 @@ function AdminJobs() {
                   onChange={handleChange}
                   rows="3"
                   placeholder="React, JavaScript, HTML, CSS"
+                />
+              </label>
+
+              {/* NEW FIELD: BENEFITS */}
+
+              <label>
+                Benefits
+                <textarea
+                  name="benefits"
+                  value={form.benefits}
+                  onChange={handleChange}
+                  rows="4"
+                  placeholder="Enter each benefit on a new line"
+                />
+              </label>
+
+              {/* NEW FIELD: APPLICATION INSTRUCTIONS */}
+
+              <label>
+                Application Instructions
+                <textarea
+                  name="applicationInstructions"
+                  value={form.applicationInstructions}
+                  onChange={handleChange}
+                  rows="4"
+                  placeholder="Enter instructions for candidates applying for this job"
                 />
               </label>
 
