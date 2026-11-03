@@ -442,14 +442,13 @@ async function exportApplications(req, res, next) {
     }
 }
 
-
 // EXPORT CONTROLLERS
-module.exports = {q
-
-    applyForJob,
-    getAllApplications,
-    updateApplicationStatus,
-    deleteApplication,
-    exportApplications,
-    downloadResume,
-    trackApplication};
+module.exports = {
+  applyForJob,
+  getAllApplications,
+  updateApplicationStatus,
+  deleteApplication,
+  exportApplications,
+  downloadResume,
+  trackApplication
+};
