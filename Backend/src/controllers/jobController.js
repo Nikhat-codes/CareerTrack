@@ -1,6 +1,6 @@
 "use strict";
 
-const Job = require("../models/Job");
+const Job = require("../models/job");
 
 async function getPublicJobs(req, res, next) {
   try {

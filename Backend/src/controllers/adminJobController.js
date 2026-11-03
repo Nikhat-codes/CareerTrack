@@ -1,7 +1,7 @@
 "use strict";
 
 const mongoose = require("mongoose");
-const Job = require("../models/Job");
+const Job = require("../models/job");
 
 // CREATE JOB
 async function createJob(req, res, next) {
