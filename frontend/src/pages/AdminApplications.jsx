@@ -7,6 +7,7 @@ import {
   Trash2,
   RefreshCw,
   ArrowLeft,
+  Save,
 } from "lucide-react";
 
 const STATUSES = [
@@ -25,6 +26,10 @@ function AdminApplications() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(1);
+
+  const [notesDrafts, setNotesDrafts] = useState({});
+  const [savingNotes, setSavingNotes] = useState(null);
+
   const [pagination, setPagination] = useState({
     total: 0,
     pages: 1,
@@ -44,6 +49,7 @@ function AdminApplications() {
       navigate("/admin/login");
       return true;
     }
+
     return false;
   };
 
@@ -65,7 +71,18 @@ function AdminApplications() {
         params,
       });
 
-      setApplications(response.data.data || []);
+      const fetchedApplications = response.data.data || [];
+
+      setApplications(fetchedApplications);
+
+      const drafts = {};
+
+      fetchedApplications.forEach((app) => {
+        drafts[app._id] = app.notes || "";
+      });
+
+      setNotesDrafts(drafts);
+
       setPagination(
         response.data.pagination || { total: 0, pages: 1 }
       );
@@ -99,6 +116,7 @@ function AdminApplications() {
       );
 
       alert("Application status updated!");
+
       fetchApplications();
     } catch (error) {
       if (!handleAuthError(error)) {
@@ -107,6 +125,36 @@ function AdminApplications() {
             "Status update nahi hua."
         );
       }
+    }
+  };
+
+  const saveNotes = async (app) => {
+    try {
+      setSavingNotes(app._id);
+
+      const notes = notesDrafts[app._id] || "";
+
+      await API.patch(
+        `/applications/${app._id}/status`,
+        {
+          status: app.status,
+          notes,
+        },
+        authConfig
+      );
+
+      alert("Internal notes saved successfully!");
+
+      fetchApplications();
+    } catch (error) {
+      if (!handleAuthError(error)) {
+        alert(
+          error.response?.data?.message ||
+            "Notes save nahi ho paye."
+        );
+      }
+    } finally {
+      setSavingNotes(null);
     }
   };
 
@@ -121,6 +169,7 @@ function AdminApplications() {
       await API.delete(`/applications/${id}`, authConfig);
 
       alert("Application deleted successfully!");
+
       fetchApplications();
     } catch (error) {
       if (!handleAuthError(error)) {
@@ -147,8 +196,10 @@ function AdminApplications() {
       );
 
       const link = document.createElement("a");
+
       link.href = blobUrl;
       link.download = filename || "resume";
+
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -178,8 +229,10 @@ function AdminApplications() {
       );
 
       const link = document.createElement("a");
+
       link.href = blobUrl;
       link.download = "applications.csv";
+
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -204,6 +257,7 @@ function AdminApplications() {
           </button>
 
           <h1>Applications Management</h1>
+
           <p>Manage and review candidate applications.</p>
         </div>
 
@@ -267,6 +321,7 @@ function AdminApplications() {
                 <th>Applied On</th>
                 <th>Resume</th>
                 <th>Status</th>
+                <th>Internal Notes</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -276,25 +331,27 @@ function AdminApplications() {
                 <tr key={app._id}>
                   <td>
                     <strong>{app.candidateName}</strong>
-<small>{app.education}</small>
-<small>ID: {app._id}</small>
 
-<button
-  type="button"
-  onClick={() => {
-    navigator.clipboard.writeText(app._id);
-    alert("Application ID copied!");
-  }}
->
-  Copy ID
-</button>
-                  
+                    <small>{app.education}</small>
+
+                    <small>ID: {app._id}</small>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(app._id);
+                        alert("Application ID copied!");
+                      }}
+                    >
+                      Copy ID
+                    </button>
                   </td>
 
                   <td>
                     <strong>
                       {app.job?.title || "Job unavailable"}
                     </strong>
+
                     <small>{app.job?.company || ""}</small>
                   </td>
 
@@ -341,6 +398,70 @@ function AdminApplications() {
                         </option>
                       ))}
                     </select>
+                  </td>
+
+                  <td>
+                    <div
+                      style={{
+                        minWidth: "190px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                      }}
+                    >
+                      <textarea
+                        value={notesDrafts[app._id] ?? ""}
+                        onChange={(e) =>
+                          setNotesDrafts((prev) => ({
+                            ...prev,
+                            [app._id]: e.target.value,
+                          }))
+                        }
+                        placeholder="Add internal notes..."
+                        rows={3}
+                        maxLength={2000}
+                        style={{
+                          width: "100%",
+                          minHeight: "75px",
+                          padding: "10px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "8px",
+                          resize: "vertical",
+                          fontFamily: "inherit",
+                          fontSize: "13px",
+                          boxSizing: "border-box",
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => saveNotes(app)}
+                        disabled={savingNotes === app._id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "6px",
+                          padding: "9px 12px",
+                          border: "none",
+                          borderRadius: "7px",
+                          background: "#2563eb",
+                          color: "#ffffff",
+                          cursor:
+                            savingNotes === app._id
+                              ? "not-allowed"
+                              : "pointer",
+                          opacity:
+                            savingNotes === app._id ? 0.6 : 1,
+                        }}
+                      >
+                        <Save size={15} />
+
+                        {savingNotes === app._id
+                          ? "Saving..."
+                          : "Save Notes"}
+                      </button>
+                    </div>
                   </td>
 
                   <td>
