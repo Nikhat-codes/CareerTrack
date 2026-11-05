@@ -141,6 +141,7 @@ async function getAllApplications(req, res, next) {
         } = req.query;
 
         const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+
         const pageSize = Math.min(
             Math.max(parseInt(limit, 10) || 10, 1),
             50
@@ -382,14 +383,27 @@ async function exportApplications(req, res, next) {
             .sort({ createdAt: -1 })
             .lean();
 
+        // CSV escaping and spreadsheet formula-injection protection.
         const escapeCSV = (value) => {
             let text = String(value ?? "");
 
-            if (/^[\s]*[=+\-@\t\r]/.test(text)) {
+            if (/^[\s]*[=+\-@]/.test(text)) {
                 text = "'" + text;
             }
 
             return `"${text.replace(/"/g, '""')}"`;
+        };
+
+        // Format date as DD MMM YYYY.
+        const formatAppliedDate = (date) => {
+            if (!date) return "";
+
+            return new Intl.DateTimeFormat("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                timeZone: "Asia/Kolkata"
+            }).format(new Date(date));
         };
 
         const headers = [
@@ -409,7 +423,10 @@ async function exportApplications(req, res, next) {
         const rows = applications.map(app => [
             app.candidateName,
             app.email,
-            app.phone,
+
+            // Keep phone numbers as text in Excel/WPS where possible.
+            app.phone ? `\t${app.phone}` : "",
+
             app.job?.title || "Deleted Job",
             app.job?.company || "",
             app.education,
@@ -417,7 +434,7 @@ async function exportApplications(req, res, next) {
             (app.skills || []).join(", "),
             app.coverLetter,
             app.status,
-            app.createdAt?.toISOString() || ""
+            formatAppliedDate(app.createdAt)
         ]);
 
         const csv = [
@@ -435,6 +452,7 @@ async function exportApplications(req, res, next) {
             'attachment; filename="careertrack-applications.csv"'
         );
 
+        // UTF-8 BOM for Excel and WPS compatibility.
         res.send("\uFEFF" + csv);
 
     } catch (error) {
@@ -442,13 +460,14 @@ async function exportApplications(req, res, next) {
     }
 }
 
+
 // EXPORT CONTROLLERS
 module.exports = {
-  applyForJob,
-  getAllApplications,
-  updateApplicationStatus,
-  deleteApplication,
-  exportApplications,
-  downloadResume,
-  trackApplication
+    applyForJob,
+    getAllApplications,
+    updateApplicationStatus,
+    deleteApplication,
+    exportApplications,
+    downloadResume,
+    trackApplication
 };
