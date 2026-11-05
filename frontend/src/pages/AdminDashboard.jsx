@@ -29,7 +29,7 @@ function AdminDashboard() {
       } catch (err) {
         setError(
           err.response?.data?.message ||
-          "Unable to load dashboard statistics."
+            "Unable to load dashboard statistics."
         );
       } finally {
         setLoading(false);
@@ -44,28 +44,38 @@ function AdminDashboard() {
     navigate("/admin/login");
   }
 
- const cards = [
-  {
-    title: "Total Jobs",
-    value: stats?.jobs?.total ?? 0,
-    icon: "💼",
-},
-  {
-    title: "Active Jobs",
-    value: stats?.jobs?.published ?? 0,
-    icon: "📢",
-  },
-  {
-    title: "Total Applications",
-    value: stats?.applications?.total ?? 0,
-    icon: "📄",
-  },
-  {
-    title: "Pending Applications",
-    value: stats?.applications?.submitted ?? 0,
-    icon: "⏳",
-  },
-];
+  const cards = [
+    {
+      title: "Total Jobs",
+      value: stats?.jobs?.total ?? 0,
+      icon: "💼",
+    },
+    {
+      title: "Active Jobs",
+      value: stats?.jobs?.active ?? 0,
+      icon: "📢",
+    },
+    {
+      title: "Expired Jobs",
+      value: stats?.jobs?.expired ?? 0,
+      icon: "⌛",
+    },
+    {
+      title: "Closed Jobs",
+      value: stats?.jobs?.closed ?? 0,
+      icon: "🔒",
+    },
+    {
+      title: "Total Applications",
+      value: stats?.applications?.total ?? 0,
+      icon: "📄",
+    },
+    {
+      title: "Pending Applications",
+      value: stats?.applications?.pending ?? 0,
+      icon: "⏳",
+    },
+  ];
 
   return (
     <div className="admin-dashboard">
@@ -74,8 +84,14 @@ function AdminDashboard() {
         <p>ADMIN PANEL</p>
 
         <button className="active">📊 Dashboard</button>
-        <button onClick={() => navigate("/admin/jobs")}>💼 Manage Jobs</button>
-        <button onClick={() => navigate("/admin/applications")}>📄 Applications</button>
+
+        <button onClick={() => navigate("/admin/jobs")}>
+          💼 Manage Jobs
+        </button>
+
+        <button onClick={() => navigate("/admin/applications")}>
+          📄 Applications
+        </button>
 
         <button className="logout-button" onClick={handleLogout}>
           ↪ Logout
@@ -89,6 +105,7 @@ function AdminDashboard() {
             <h1>Dashboard Overview</h1>
             <span>Welcome to your admin panel.</span>
           </div>
+
           <div className="admin-avatar">A</div>
         </header>
 
@@ -98,13 +115,19 @@ function AdminDashboard() {
           <p className="dashboard-error">{error}</p>
         ) : (
           <>
-            <h2 className="section-heading">Platform Statistics</h2>
+            <h2 className="section-heading">
+              Platform Statistics
+            </h2>
 
             <div className="dashboard-cards">
               {cards.map((card) => (
                 <div className="stat-card" key={card.title}>
-                  <div className="stat-icon">{card.icon}</div>
+                  <div className="stat-icon">
+                    {card.icon}
+                  </div>
+
                   <p>{card.title}</p>
+
                   <h2>{card.value}</h2>
                 </div>
               ))}
@@ -112,9 +135,10 @@ function AdminDashboard() {
 
             <div className="dashboard-welcome">
               <h2>Manage your recruitment platform</h2>
+
               <p>
-                Manage job postings and review candidate applications
-                from one place.
+                Manage job postings and review candidate
+                applications from one place.
               </p>
             </div>
           </>
