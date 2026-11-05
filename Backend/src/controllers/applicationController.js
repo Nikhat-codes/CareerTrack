@@ -131,53 +131,150 @@ async function applyForJob(req, res, next) {
 }
 
 
-// 2. GET ALL APPLICATIONS
+// 2. GET ALL APPLICATIONS WITH FILTERS
 async function getAllApplications(req, res, next) {
-    try {
-        const {
-            status,
-            page = 1,
-            limit = 10
-        } = req.query;
+  try {
+    const {
+      status,
+      jobId,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 10
+    } = req.query;
 
-        const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+    const currentPage = Math.max(
+      parseInt(page, 10) || 1,
+      1
+    );
 
-        const pageSize = Math.min(
-            Math.max(parseInt(limit, 10) || 10, 1),
-            50
-        );
+    const pageSize = Math.min(
+      Math.max(parseInt(limit, 10) || 10, 1),
+      50
+    );
 
-        const filters = {};
+    const filters = {};
 
-        if (status) {
-            filters.status = status;
+    // STATUS FILTER
+    const allowedStatuses = [
+      "Submitted",
+      "Under Review",
+      "Shortlisted",
+      "Interview Scheduled",
+      "Selected",
+      "Rejected"
+    ];
+
+    if (status) {
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid application status."
+        });
+      }
+
+      filters.status = status;
+    }
+
+    // JOB FILTER
+    if (jobId) {
+      if (!mongoose.isValidObjectId(jobId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid job ID."
+        });
+      }
+
+      filters.job = jobId;
+    }
+
+    // DATE FILTER
+    if (startDate || endDate) {
+      const dateFilter = {};
+
+      const isValidDate = (date) => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          return false;
         }
 
-        const [applications, total] = await Promise.all([
-            Application.find(filters)
-                .populate("job", "title company location")
-                .sort({ createdAt: -1 })
-                .skip((currentPage - 1) * pageSize)
-                .limit(pageSize)
-                .lean(),
+        const parsed = new Date(`${date}T00:00:00.000Z`);
 
-            Application.countDocuments(filters)
-        ]);
+        return (
+          !Number.isNaN(parsed.getTime()) &&
+          parsed.toISOString().slice(0, 10) === date
+        );
+      };
 
-        res.json({
-            success: true,
-            data: applications,
-            pagination: {
-                page: currentPage,
-                limit: pageSize,
-                total,
-                pages: Math.ceil(total / pageSize)
-            }
+      if (startDate) {
+        if (!isValidDate(startDate)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid start date."
+          });
+        }
+
+        dateFilter.$gte = new Date(
+          `${startDate}T00:00:00.000Z`
+        );
+      }
+
+      if (endDate) {
+        if (!isValidDate(endDate)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid end date."
+          });
+        }
+
+        const nextDay = new Date(
+          `${endDate}T00:00:00.000Z`
+        );
+
+        nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+
+        dateFilter.$lt = nextDay;
+      }
+
+      if (
+        dateFilter.$gte &&
+        dateFilter.$lt &&
+        dateFilter.$gte >= dateFilter.$lt
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Start date must be before or equal to end date."
         });
+      }
 
-    } catch (error) {
-        next(error);
+      filters.createdAt = dateFilter;
     }
+
+    // FETCH FILTERED APPLICATIONS
+    const [applications, total] = await Promise.all([
+      Application.find(filters)
+        .populate("job", "title company location")
+        .sort({ createdAt: -1 })
+        .skip((currentPage - 1) * pageSize)
+        .limit(pageSize)
+        .lean(),
+
+      Application.countDocuments(filters)
+    ]);
+
+    res.json({
+      success: true,
+      data: applications,
+      pagination: {
+        page: currentPage,
+        limit: pageSize,
+        total,
+        pages: Math.ceil(total / pageSize)
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
 }
 
 
