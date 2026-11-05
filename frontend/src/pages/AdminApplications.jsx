@@ -23,8 +23,16 @@ function AdminApplications() {
   const navigate = useNavigate();
 
   const [applications, setApplications] = useState([]);
+  const [jobs, setJobs] = useState([]);
+
   const [loading, setLoading] = useState(true);
+  const [jobsLoading, setJobsLoading] = useState(true);
+
   const [filter, setFilter] = useState("");
+  const [jobFilter, setJobFilter] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   const [page, setPage] = useState(1);
 
   const [notesDrafts, setNotesDrafts] = useState({});
@@ -44,7 +52,10 @@ function AdminApplications() {
   };
 
   const handleAuthError = (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    if (
+      error.response?.status === 401 ||
+      error.response?.status === 403
+    ) {
       localStorage.removeItem("adminToken");
       navigate("/admin/login");
       return true;
@@ -53,6 +64,27 @@ function AdminApplications() {
     return false;
   };
 
+  // FETCH JOBS FOR JOB FILTER
+  const fetchJobs = async () => {
+    try {
+      setJobsLoading(true);
+
+      const response = await API.get("/jobs?limit=100");
+
+      const fetchedJobs =
+        response.data.data ||
+        response.data.jobs ||
+        [];
+
+      setJobs(Array.isArray(fetchedJobs) ? fetchedJobs : []);
+    } catch (error) {
+      console.error("Jobs loading error:", error);
+    } finally {
+      setJobsLoading(false);
+    }
+  };
+
+  // FETCH APPLICATIONS WITH FILTERS
   const fetchApplications = async () => {
     try {
       setLoading(true);
@@ -64,6 +96,18 @@ function AdminApplications() {
 
       if (filter) {
         params.status = filter;
+      }
+
+      if (jobFilter) {
+        params.jobId = jobFilter;
+      }
+
+      if (startDate) {
+        params.startDate = startDate;
+      }
+
+      if (endDate) {
+        params.endDate = endDate;
       }
 
       const response = await API.get("/applications", {
@@ -81,10 +125,16 @@ function AdminApplications() {
         drafts[app._id] = app.notes || "";
       });
 
-      setNotesDrafts(drafts);
+      setNotesDrafts((previous) => ({
+        ...previous,
+        ...drafts,
+      }));
 
       setPagination(
-        response.data.pagination || { total: 0, pages: 1 }
+        response.data.pagination || {
+          total: 0,
+          pages: 1,
+        }
       );
     } catch (error) {
       if (!handleAuthError(error)) {
@@ -104,9 +154,28 @@ function AdminApplications() {
       return;
     }
 
-    fetchApplications();
-  }, [page, filter]);
+    fetchJobs();
+  }, []);
 
+  useEffect(() => {
+    if (!token) {
+      navigate("/admin/login");
+      return;
+    }
+
+    fetchApplications();
+  }, [page, filter, jobFilter, startDate, endDate]);
+
+  // RESET ALL FILTERS
+  const resetFilters = () => {
+    setFilter("");
+    setJobFilter("");
+    setStartDate("");
+    setEndDate("");
+    setPage(1);
+  };
+
+  // UPDATE APPLICATION STATUS
   const updateStatus = async (id, status) => {
     try {
       await API.patch(
@@ -128,6 +197,7 @@ function AdminApplications() {
     }
   };
 
+  // SAVE INTERNAL NOTES
   const saveNotes = async (app) => {
     try {
       setSavingNotes(app._id);
@@ -158,6 +228,7 @@ function AdminApplications() {
     }
   };
 
+  // DELETE APPLICATION
   const deleteApplication = async (id) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this application?"
@@ -181,6 +252,7 @@ function AdminApplications() {
     }
   };
 
+  // DOWNLOAD RESUME
   const downloadResume = async (id, filename) => {
     try {
       const response = await API.get(
@@ -212,6 +284,7 @@ function AdminApplications() {
     }
   };
 
+  // EXPORT CSV
   const exportCSV = async () => {
     try {
       const response = await API.get(
@@ -247,6 +320,7 @@ function AdminApplications() {
 
   return (
     <div className="applications-page">
+      {/* HEADER */}
       <div className="applications-header">
         <div>
           <button
@@ -264,7 +338,10 @@ function AdminApplications() {
         <div className="application-header-actions">
           <button
             className="refresh-button"
-            onClick={fetchApplications}
+            onClick={() => {
+              fetchApplications();
+              fetchJobs();
+            }}
           >
             <RefreshCw size={17} /> Refresh
           </button>
@@ -278,29 +355,94 @@ function AdminApplications() {
         </div>
       </div>
 
+      {/* FILTER TOOLBAR */}
       <div className="applications-toolbar">
         <div>
           <h3>All Applications</h3>
           <p>Total: {pagination.total || 0}</p>
         </div>
 
-        <select
-          value={filter}
-          onChange={(e) => {
-            setFilter(e.target.value);
-            setPage(1);
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "10px",
+            alignItems: "center",
           }}
         >
-          <option value="">All Statuses</option>
+          {/* STATUS FILTER */}
+          <select
+            value={filter}
+            onChange={(e) => {
+              setFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All Statuses</option>
 
-          {STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {status}
+            {STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+
+          {/* JOB FILTER */}
+          <select
+            value={jobFilter}
+            onChange={(e) => {
+              setJobFilter(e.target.value);
+              setPage(1);
+            }}
+            disabled={jobsLoading}
+          >
+            <option value="">
+              {jobsLoading ? "Loading Jobs..." : "All Jobs"}
             </option>
-          ))}
-        </select>
+
+            {jobs.map((job) => (
+              <option key={job._id} value={job._id}>
+                {job.title} - {job.company}
+              </option>
+            ))}
+          </select>
+
+          {/* START DATE */}
+          <input
+            type="date"
+            value={startDate}
+            max={endDate || undefined}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setPage(1);
+            }}
+            aria-label="Start date"
+          />
+
+          {/* END DATE */}
+          <input
+            type="date"
+            value={endDate}
+            min={startDate || undefined}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setPage(1);
+            }}
+            aria-label="End date"
+          />
+
+          {/* RESET FILTERS */}
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="refresh-button"
+          >
+            Reset Filters
+          </button>
+        </div>
       </div>
 
+      {/* APPLICATIONS */}
       {loading ? (
         <div className="applications-loading">
           Loading applications...
@@ -308,7 +450,10 @@ function AdminApplications() {
       ) : applications.length === 0 ? (
         <div className="applications-empty">
           <h3>No applications found</h3>
-          <p>Applications will appear here when candidates apply.</p>
+
+          <p>
+            No applications match the selected filters.
+          </p>
         </div>
       ) : (
         <div className="applications-table-wrapper">
@@ -400,6 +545,7 @@ function AdminApplications() {
                     </select>
                   </td>
 
+                  {/* INTERNAL NOTES */}
                   <td>
                     <div
                       style={{
@@ -464,6 +610,7 @@ function AdminApplications() {
                     </div>
                   </td>
 
+                  {/* DELETE */}
                   <td>
                     <button
                       className="delete-application-button"
@@ -480,6 +627,7 @@ function AdminApplications() {
         </div>
       )}
 
+      {/* PAGINATION */}
       <div className="applications-pagination">
         <button
           disabled={page <= 1}
