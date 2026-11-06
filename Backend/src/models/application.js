@@ -49,13 +49,20 @@ const applicationSchema = new mongoose.Schema(
       type: String,
       default: ""
     },
-
-    resume: {
-      filename: String,
-      path: String,
-      mimetype: String
-    },
-
+resume: {
+  filename: String,
+  path: String,
+  mimetype: String,
+  publicId: String,
+  resourceType: {
+    type: String,
+    default: "raw"
+  },
+  storageType: {
+    type: String,
+    default: "local"
+  }
+},
     status: {
       type: String,
       enum: [
