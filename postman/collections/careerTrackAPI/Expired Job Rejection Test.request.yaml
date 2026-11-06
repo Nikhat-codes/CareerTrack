@@ -1,0 +1,62 @@
+$kind: http-request
+description: ""
+url: https://careertrack-vvpy.onrender.com/api/applications
+method: POST
+body:
+  type: formdata
+  content:
+    - type: text
+      key: candidateName
+      value: Test Expired Candidate
+      description: ""
+      disabled: false
+    - type: text
+      key: email
+      value: expiredtest@example.com
+      description: ""
+      disabled: false
+    - type: text
+      key: phone
+      value: "9999999999"
+      description: ""
+      disabled: false
+    - type: text
+      key: education
+      value: B.Tech CSE
+      description: ""
+      disabled: false
+    - type: text
+      key: experience
+      value: Fresher
+      description: ""
+      disabled: false
+    - type: text
+      key: skills
+      value: HTML, CSS, JavaScript
+      description: ""
+      disabled: false
+    - type: text
+      key: coverLetter
+      value: Testing expired job rejection
+      description: ""
+      disabled: false
+    - type: text
+      key: jobId
+      value: 6aeb47cc9d969aa4cd4b96f8
+      description: ""
+      disabled: false
+    - type: file
+      key: resume
+      src:
+        - /C:/Users/HP/Downloads/cd6473e1f131a423aca239d5848d882b.pdf
+      description: ""
+      disabled: false
+auth:
+  type: bearer
+settings:
+  protocolVersion: auto
+  strictSSL: false
+  followRedirects: true
+  disableCookies: false
+  maxResponseSize: 52428800
+order: 1000

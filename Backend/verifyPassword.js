@@ -8,24 +8,40 @@ const Admin = require("./src/models/admin");
 
 async function verifyPassword() {
     try {
-        await mongoose.connect(process.env.MONGODB_URI, {
+        const { MONGODB_URI, ADMIN_EMAIL, ADMIN_PASSWORD } = process.env;
+
+        if (!MONGODB_URI || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+            throw new Error("Check your .env variables.");
+        }
+
+        await mongoose.connect(MONGODB_URI, {
             dbName: "careertrack"
         });
 
-        const email = process.env.ADMIN_EMAIL.trim().toLowerCase();
-        const password = process.env.ADMIN_PASSWORD;
+        const email = ADMIN_EMAIL.trim().toLowerCase();
 
         const admin = await Admin.findOne({ email }).select("+password");
 
-        const result = await bcrypt.compare(password, admin.password);
+        if (!admin) {
+            throw new Error("Admin account not found.");
+        }
 
-        console.log("Email:", email);
+        const result = await bcrypt.compare(
+            ADMIN_PASSWORD,
+            admin.password
+        );
+
+        console.log("Admin account found.");
         console.log("Password Match:", result);
 
     } catch (error) {
-        console.log("ERROR:", error.message);
+        console.error("ERROR:", error.message);
+        process.exitCode = 1;
+
     } finally {
-        await mongoose.disconnect();
+        if (mongoose.connection.readyState !== 0) {
+            await mongoose.disconnect();
+        }
     }
 }
 
