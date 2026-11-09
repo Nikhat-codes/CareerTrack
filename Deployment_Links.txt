@@ -1,0 +1,10 @@
+Project Name: CareerTrack
+
+Frontend Deployment:
+https://career-track-two.vercel.app
+
+Backend Deployment:
+https://careertrack-vvpy.onrender.com
+
+Backend Health Check:
+https://careertrack-vvpy.onrender.com/api/health
