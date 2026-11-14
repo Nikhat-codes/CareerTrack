@@ -444,11 +444,11 @@ function HomePage() {
             Career<span>Track</span>
           </span>
         </a>
-
-        <nav className="site-nav" aria-label="Main navigation">
-          <a href="#jobs">Find jobs</a>
-          <a href="#about">About</a>
-        </nav>
+<nav className="site-nav" aria-label="Main navigation">
+  <a href="#jobs">Find Jobs</a>
+  <a href="#about">About</a>
+  <a href="/track-application">Track Application</a>
+</nav>
 
         <button
           className="button button-outline admin-button"
