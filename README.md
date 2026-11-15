@@ -116,7 +116,7 @@ CareerTrack/
 │   └── resources.yaml
 ├── Backend/
 │   ├── Docs/
-│   │   ├── API_Documentation_Updated.pdf
+│   │   ├── API_Documentation.pdf
 │   │   ├── Database_Schema.pdf
 │   │   └── Test_Cases.xlsx
 │   ├── screenshots/
